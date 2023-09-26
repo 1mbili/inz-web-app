@@ -1,0 +1,98 @@
+---
+# tasks file for my-web
+# - name: Install pip
+#   ansible.builtin.apt:
+#     name: python3-pip
+#     state: present
+#     update_cache: true
+#     cache_valid_time: 3600
+
+- name: Install git
+  debug: 
+   msg: "cd {{ web_app_dir }}/backend && nohup python3 -m gunicorn --bind {{ ansible_ssh_host }}:8000 manage:app >/dev/null 2>&1 &"
+
+
+- name: Copy ssh keys
+  ansible.builtin.copy:
+    src: ~/.ssh/id_rsa
+    dest: /root/.ssh/id_rsa
+    mode: '0600'
+
+- name: Write the new github host key to known hosts
+  ansible.builtin.known_hosts:
+    name: "github.com"
+    state: present
+    key: "{{ lookup('pipe', 'ssh-keyscan github.com') }}"
+
+- name: Download app
+  ansible.builtin.git:
+    repo: git@github.com:1mbili/Ochrona-Danych.git
+    dest: "{{ web_app_dir}}"
+    force: true
+    update: yes
+
+- name: Install specified python requirements
+  ansible.builtin.pip:
+    requirements: "{{ web_app_dir }}/backend/requirements.txt"
+
+- name: Create app group
+  ansible.builtin.group:
+    name: "{{ web_app_user }}"
+    state: present
+    gid: "{{ web_user_gid }}"
+
+- name: Create app user
+  ansible.builtin.user:
+    name: "{{ web_app_user}}"
+    shell: /bin/bash
+    expires: -1
+    state: present
+    uid: "{{ web_user_uid }}"
+
+- name: Add env variables
+  become_user: "{{ web_app_user}}"
+  ansible.builtin.lineinfile:
+    path: ~/.bashrc
+    line: "{{ item.line }}"
+    state: present
+  loop:
+    - { variable: PythonPath, line: "export PYTHONPATH=$PYTHONPATH:'{{ web_app_dir }}/backend/app/'" }
+    - { variable: AZURE_TENANT_ID, line: "export AZURE_TENANT_ID='{{ lookup('env','AZURE_TENANT_ID') | quote   }}'" }
+    - { variable: AZURE_CLIENT_ID, line: "export AZURE_CLIENT_ID='{{ lookup('env','AZURE_CLIENT_ID') | quote  }}'" }
+    - { variable: AZURE_CLIENT_SECRET, line: "export AZURE_CLIENT_SECRET='{{ lookup('env','AZURE_CLIENT_SECRET') | quote  }}'" }
+    - { variable: KEY_VAULT_NAME, line: "export KEY_VAULT_NAME='{{ lookup('env','KEY_VAULT_NAME') | quote }}'" }
+  loop_control:
+    label: "{{ item.variable }}"
+  notify:
+   -  Reload bashrc
+
+- name: Flush handlers
+  meta: flush_handlers
+
+- name: restart app
+  block:
+  - name: Find all process using port 8000
+    ansible.builtin.shell: "lsof -t -i:8000"
+    register: processes_on_port
+
+  - name: Stop all processes running on port 8000
+    ansible.builtin.shell: "kill -9 {{ item }}"
+    with_items: "{{ processes_on_port.stdout_lines }}"
+    ignore_errors: yes
+  ignore_errors: true
+  tags:
+    - start
+
+- name: Start app
+  become_user: "{{ web_app_user}}"
+  ansible.builtin.shell:
+    cmd: "cd {{ web_app_dir }}/backend/ && nohup python3 -m gunicorn --bind {{ ansible_ssh_host }}:8000 manage:app  </dev/null >/dev/null 2>&1 &"
+  environment:
+    PYTHONPATH: "{{ web_app_dir }}/backend/app/"
+    AZURE_TENANT_ID: "{{ lookup('env','AZURE_TENANT_ID') }}"
+    AZURE_CLIENT_ID: "{{ lookup('env','AZURE_CLIENT_ID') }}"
+    AZURE_CLIENT_SECRET: "{{ lookup('env','AZURE_CLIENT_SECRET') }}"
+    KEY_VAULT_NAME: "{{ lookup('env','KEY_VAULT_NAME') }}"
+  tags:
+    - start
+

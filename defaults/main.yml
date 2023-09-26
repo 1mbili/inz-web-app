@@ -1,0 +1,6 @@
+---
+# defaults file for my-web
+web_app_user: web_user
+web_app_dir: /var/www
+web_user_gid: 1044
+web_user_uid: 1044
