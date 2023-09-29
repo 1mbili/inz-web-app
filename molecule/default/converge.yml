@@ -10,6 +10,19 @@
 
     - name: Include my_web role
       ansible.builtin.include_role:
-        name: my_web
+        name: 1mbili.my_web
       vars:
         ansible_ssh_host: "127.0.0.1"
+
+  post_tasks:
+    - name: Wait for the web server to start
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: 8000
+        state: drained
+        delay: 10
+
+    - name: Test app working
+      ansible.builtin.uri:
+        url: http://127.0.0.1:8000/authenticate
+        status_code: 200
