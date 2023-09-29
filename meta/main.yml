@@ -3,7 +3,6 @@ galaxy_info:
   role_name: my_web
   author: 1mbili
   description: Simple web app
-  company: your company (optional)
   license: MIT
   min_ansible_version: "2.10"
   platforms:

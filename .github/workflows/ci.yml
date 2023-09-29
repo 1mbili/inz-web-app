@@ -10,7 +10,7 @@ name: CI
 
 defaults:
   run:
-    working-directory: '1mbili.my-web'
+    working-directory: '1mbili.my_web'
 
 jobs:
 
@@ -41,8 +41,7 @@ jobs:
     strategy:
       matrix:
         distro:
-          - rockylinux8
-          - ubuntu2004
+          - ubuntu2204
 
     steps:
       - name: Check out the codebase.
