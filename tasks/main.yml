@@ -1,31 +1,53 @@
 ---
-#tasks file for my-web
-- name: Install pip
+# tasks file for my-web
+- name: Ensure pip, keychain, git existence
   ansible.builtin.apt:
-    name: python3-pip
+    name: "{{ item }}"
     state: present
     update_cache: true
     cache_valid_time: 3600
+  with_items:
+    - python3-pip
+    - keychain
+    - git
+    - lsof
+    - wget
 
-- name: Install git
-  ansible.builtin.debug:
-    msg: "cd {{ web_app_dir }}/backend && nohup python3 -m gunicorn --bind {{ ansible_ssh_host }}:8000 manage:app >/dev/null 2>&1 &"
+- name: Create app group
+  ansible.builtin.group:
+    name: "{{ web_app_user }}"
+    state: present
+    gid: "{{ web_user_gid }}"
+
+- name: Create app user
+  ansible.builtin.user:
+    name: "{{ web_app_user }}"
+    shell: /bin/bash
+    expires: -1
+    state: present
+    uid: "{{ web_user_uid }}"
+    create_home: true
+
+- name: Ensure .ssh folder exists
+  become_user: "{{ web_app_user }}"
+  ansible.builtin.file:
+    path: "/home/{{ web_app_user }}/.ssh"
+    state: directory
+    mode: "0700"
 
 - name: Copy ssh keys
+  become_user: "{{ web_app_user }}"
   ansible.builtin.copy:
     src: ~/.ssh/id_rsa
-    dest: /root/.ssh/id_rsa
+    dest: "/home/{{ web_app_user }}/.ssh/id_rsa"
     mode: "0600"
 
-- name: Write the new github host key to known hosts
-  ansible.builtin.known_hosts:
-    name: "github.com"
-    state: present
-    key: "{{ lookup('pipe', 'ssh-keyscan github.com') }}"
-
 - name: Download app
+  become_user: "{{ web_app_user }}"
   ansible.builtin.git:
+    accept_hostkey: true
     repo: git@github.com:1mbili/Ochrona-Danych.git
+    key_file: /home/{{ web_app_user }}/.ssh/id_rsa
     dest: "{{ web_app_dir }}"
     force: true
     update: true
@@ -50,7 +72,6 @@
     uid: "{{ web_user_uid }}"
 
 - name: Add env variables
-  become: true
   become_user: "{{ web_app_user }}"
   ansible.builtin.lineinfile:
     path: ~/.bashrc
@@ -85,22 +106,20 @@
 - name: Flush handlers
   ansible.builtin.meta: flush_handlers
 
-- name: restart app
+- name: Restart app
   block:
     - name: Find all process using port 8000
-      ansible.builtin.shell: "lsof -t -i:8000"
+      ansible.builtin.command: "lsof -t -i:8000"
       register: processes_on_port
 
     - name: Stop all processes running on port 8000
-      ansible.builtin.shell: "kill -9 {{ item }}"
+      ansible.builtin.command: "kill -9 {{ item }}"
       with_items: "{{ processes_on_port.stdout_lines }}"
-      ignore_errors: true
   ignore_errors: true
   tags:
     - start
 
 - name: Start app
-  become: true
   become_user: "{{ web_app_user }}"
   ansible.builtin.shell:
     cmd: "cd {{ web_app_dir }}/backend/ && nohup python3 -m gunicorn --bind {{ ansible_ssh_host }}:8000 manage:app  </dev/null >/dev/null 2>&1 &"

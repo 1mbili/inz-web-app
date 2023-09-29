@@ -1,25 +1,20 @@
 ---
 galaxy_info:
+  role_name: my_web
   author: 1mbili
   description: Simple web app
   company: your company (optional)
-  role_name: 1mbili.my-web
   license: MIT
   min_ansible_version: "2.10"
-  #
-  # platforms:
-  # - name: Fedora
-  #   versions:
-  #   - all
-  #   - 25
-  # - name: SomePlatform
-  #   versions:
-  #   - all
-  #   - 1.0
-  #   - 7
-  #   - 99.99
+  platforms:
+    - name: Debian
+      versions:
+        - all
+    - name: Ubuntu
+      versions:
+        - trusty
+        - xenial
+        - focal
+
 
   galaxy_tags: []
-
-dependencies:
-  - role: nginxinc.nginx
