@@ -4,3 +4,10 @@ web_app_user: web_user
 web_app_dir: /var/www
 web_user_gid: 1044
 web_user_uid: 1044
+tenant_id: "{{ lookup('env', 'AZURE_TENANT_ID') }}"
+object_id: "{{ lookup('env', 'AZURE_OBJECT_ID') }}"
+client_id: "{{ lookup('env', 'AZURE_CLIENT_ID') }}"
+client_secret: "{{ lookup('env', 'AZURE_CLIENT_SECRET') }}"
+vault_name: "{{ lookup('env', 'KEY_VAULT_NAME') }}"
+vault_url: "https://{{ vault_name }}.vault.azure.net"
+secret_name: private-key

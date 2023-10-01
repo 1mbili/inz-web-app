@@ -1,4 +1,4 @@
 ---
 # handlers file for my-web
 - name: Reload bashrc
-  ansible.builtin.shell: . ~/.bashrc
+  ansible.builtin.command: . ~/.bashrc

@@ -1,4 +1,7 @@
 ---
+collections:
+  - azure.azcollection
+
 galaxy_info:
   role_name: my_web
   author: 1mbili

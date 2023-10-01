@@ -1,5 +1,6 @@
 ---
 # tasks file for my-web
+
 - name: Ensure pip, keychain, git existence
   ansible.builtin.apt:
     name: "{{ item }}"
@@ -28,22 +29,38 @@
     uid: "{{ web_user_uid }}"
     create_home: true
 
+- name: Copy ansible collections pip requirements
+  ansible.builtin.copy:
+    src: "{{ lookup('env', 'HOME') + '/.ansible/collections/ansible_collections/azure/azcollection/requirements-azure.txt'}}"
+    dest: /tmp/requirements.txt
+    mode: "0644"
+
+# - name: Ensure azure pip requirements are installed
+#   become_user: "{{ web_app_user }}"
+#   ansible.builtin.pip:
+#     requirements: /tmp/requirements.txt
+#     state: present
+
+- name: Set private key from key vault
+  set_fact: rsa_private={{ lookup('azure.azcollection.azure_keyvault_secret','private-key',vault_url=vault_url, client_id=client_id, secret=client_secret, tenant_id=tenant_id) }}
+
 - name: Ensure .ssh folder exists
-  become_user: "{{ web_app_user }}"
   ansible.builtin.file:
     path: "/home/{{ web_app_user }}/.ssh"
     state: directory
     mode: "0700"
+    owner: "{{ web_app_user }}"
 
 - name: Copy ssh keys
-  become_user: "{{ web_app_user }}"
   ansible.builtin.copy:
-    src: ~/.ssh/id_rsa
+    content: "{{ rsa_private }}"
     dest: "/home/{{ web_app_user }}/.ssh/id_rsa"
     mode: "0600"
+    owner: "{{ web_app_user }}"
+
 
 - name: Download app
-  become_user: "{{ web_app_user }}"
+#  become_user: "{{ web_app_user }}"
   ansible.builtin.git:
     accept_hostkey: true
     repo: git@github.com:1mbili/Ochrona-Danych.git
@@ -100,11 +117,6 @@
     }
   loop_control:
     label: "{{ item.variable }}"
-  notify:
-    - Reload bashrc
-
-- name: Flush handlers
-  ansible.builtin.meta: flush_handlers
 
 - name: Restart app
   block:
