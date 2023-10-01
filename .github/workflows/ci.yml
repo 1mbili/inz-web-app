@@ -61,13 +61,12 @@ jobs:
         run: pip3 install -r https://raw.githubusercontent.com/ansible-collections/azure/dev/requirements-azure.txt
 
       - name: Run Molecule tests.
-        run: molecule -vvvvv test
+        run: molecule -vvv test
         env:
           PY_COLORS: '1'
           ANSIBLE_FORCE_COLOR: '1'
           MOLECULE_DISTRO: ${{ matrix.distro }}
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_SECRET: ${{ secrets.AZURE_SECRET }}
-          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_TENANT_ID: 'DUPA123'
           KEYVAULT_NAME: ${{ secrets.KEYVAULT_NAME }}
