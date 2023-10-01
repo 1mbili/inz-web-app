@@ -29,11 +29,11 @@
     uid: "{{ web_user_uid }}"
     create_home: true
 
-- name: Copy ansible collections pip requirements
-  ansible.builtin.copy:
-    src: "{{ lookup('env', 'HOME') + '/.ansible/collections/ansible_collections/azure/azcollection/requirements-azure.txt'}}"
-    dest: /tmp/requirements.txt
-    mode: "0644"
+# - name: Copy ansible collections pip requirements
+#   ansible.builtin.copy:
+#     src: "{{ lookup('env', 'HOME') + '/.ansible/collections/ansible_collections/azure/azcollection/requirements-azure.txt'}}"
+#     dest: /tmp/requirements.txt
+#     mode: "0644"
 
 # - name: Ensure azure pip requirements are installed
 #   become_user: "{{ web_app_user }}"
