@@ -1,7 +1,7 @@
 ---
 # tasks file for my-web
 
-- name: Ensure pip, keychain, git existence
+- name: Ensure pip, keychain, git existance
   ansible.builtin.apt:
     name: "{{ item }}"
     state: present
@@ -29,22 +29,6 @@
     uid: "{{ web_user_uid }}"
     create_home: true
 
-# - name: Copy ansible collections pip requirements
-#   ansible.builtin.copy:
-#     src: "{{ lookup('env', 'HOME') + '/.ansible/collections/ansible_collections/azure/azcollection/requirements-azure.txt'}}"
-#     dest: /tmp/requirements.txt
-#     mode: "0644"
-
-# - name: Ensure azure pip requirements are installed
-#   become_user: "{{ web_app_user }}"
-#   ansible.builtin.pip:
-#     requirements: /tmp/requirements.txt
-#     state: present
-
-- name: Print debug Env variables
-  ansible.builtin.debug:
-    msg: "{{ vault_url }} : {{ client_id }} : {{ client_secret }} : {{ tenant_id }}"
-
 - name: Set private key from key vault
   set_fact: rsa_private={{ lookup('azure.azcollection.azure_keyvault_secret','private-key',vault_url=vault_url, client_id=client_id, secret=client_secret, tenant_id=tenant_id) }}
 
@@ -64,7 +48,6 @@
 
 
 - name: Download app
-#  become_user: "{{ web_app_user }}"
   ansible.builtin.git:
     accept_hostkey: true
     repo: git@github.com:1mbili/Ochrona-Danych.git
@@ -123,6 +106,7 @@
     label: "{{ item.variable }}"
 
 - name: Restart app
+  ignore_errors: true
   block:
     - name: Find all process using port 8000
       ansible.builtin.command: "lsof -t -i:8000"
@@ -131,9 +115,6 @@
     - name: Stop all processes running on port 8000
       ansible.builtin.command: "kill -9 {{ item }}"
       with_items: "{{ processes_on_port.stdout_lines }}"
-  ignore_errors: true
-  tags:
-    - start
 
 - name: Start app
   become_user: "{{ web_app_user }}"
@@ -145,5 +126,5 @@
     AZURE_CLIENT_ID: "{{ lookup('env', 'AZURE_CLIENT_ID') }}"
     AZURE_CLIENT_SECRET: "{{ lookup('env', 'AZURE_CLIENT_SECRET') }}"
     KEY_VAULT_NAME: "{{ lookup('env', 'KEY_VAULT_NAME') }}"
-  tags:
-    - start
+  register: start_app
+  changed_when: start_app.stdout != ""
