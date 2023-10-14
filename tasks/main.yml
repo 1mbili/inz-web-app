@@ -30,7 +30,8 @@
     create_home: true
 
 - name: Set private key from key vault
-  set_fact: rsa_private={{ lookup('azure.azcollection.azure_keyvault_secret','private-key',vault_url=vault_url, client_id=client_id, secret=client_secret, tenant_id=tenant_id) }}
+  ansible.builtin.set_fact:
+    rsa_private: "{{ lookup('azure.azcollection.azure_keyvault_secret','private-key',vault_url=vault_url, client_id=client_id, secret=client_secret, tenant_id=tenant_id) }}"
 
 - name: Ensure .ssh folder exists
   ansible.builtin.file:
@@ -45,7 +46,6 @@
     dest: "/home/{{ web_app_user }}/.ssh/id_rsa"
     mode: "0600"
     owner: "{{ web_app_user }}"
-
 
 - name: Download app
   ansible.builtin.git:
@@ -76,47 +76,46 @@
     uid: "{{ web_user_uid }}"
 
 - name: Add env variables
-  become_user: "{{ web_app_user }}"
+  become: true
+  become_user: '{{ web_app_user }}'
   ansible.builtin.lineinfile:
     path: ~/.bashrc
-    line: "{{ item.line }}"
+    line: '{{ item.line }}'
     state: present
   loop:
-    - {
-      variable: PythonPath,
-      line: "export PYTHONPATH=$PYTHONPATH:'{{ web_app_dir }}/backend/app/'",
-    }
-    - {
-      variable: AZURE_TENANT_ID,
-      line: "export AZURE_TENANT_ID='{{ lookup('env', 'AZURE_TENANT_ID') | quote }}'",
-    }
-    - {
-      variable: AZURE_CLIENT_ID,
-      line: "export AZURE_CLIENT_ID='{{ lookup('env', 'AZURE_CLIENT_ID') | quote }}'",
-    }
-    - {
-      variable: AZURE_CLIENT_SECRET,
-      line: "export AZURE_CLIENT_SECRET='{{ lookup('env', 'AZURE_CLIENT_SECRET') | quote }}'",
-    }
-    - {
-      variable: KEY_VAULT_NAME,
-      line: "export KEY_VAULT_NAME='{{ lookup('env', 'KEY_VAULT_NAME') | quote }}'",
-    }
+    - variable: PythonPath
+      line: 'export PYTHONPATH=$PYTHONPATH:''{{ web_app_dir }}/backend/app/'''
+    - variable: AZURE_TENANT_ID
+      line: 'export AZURE_TENANT_ID=''{{ lookup(''env'', ''AZURE_TENANT_ID'') | quote }}'''
+    - variable: AZURE_CLIENT_ID
+      line: 'export AZURE_CLIENT_ID=''{{ lookup(''env'', ''AZURE_CLIENT_ID'') | quote }}'''
+    - variable: AZURE_CLIENT_SECRET
+      line: >-
+        export AZURE_CLIENT_SECRET='{{ lookup('env', 'AZURE_CLIENT_SECRET') |
+        quote }}'
+    - variable: KEY_VAULT_NAME
+      line: 'export KEY_VAULT_NAME=''{{ lookup(''env'', ''KEY_VAULT_NAME'') | quote }}'''
+
   loop_control:
     label: "{{ item.variable }}"
 
 - name: Restart app
-  ignore_errors: true
   block:
     - name: Find all process using port 8000
       ansible.builtin.command: "lsof -t -i:8000"
       register: processes_on_port
+      changed_when: processes_on_port.rc == 1
+      failed_when: processes_on_port.rc > 1
 
     - name: Stop all processes running on port 8000
       ansible.builtin.command: "kill -9 {{ item }}"
+      register: result
       with_items: "{{ processes_on_port.stdout_lines }}"
+      changed_when: result.rc == 0
+      failed_when: result.rc > 1
 
 - name: Start app
+  become: true
   become_user: "{{ web_app_user }}"
   ansible.builtin.shell:
     cmd: "cd {{ web_app_dir }}/backend/ && nohup python3 -m gunicorn --bind {{ ansible_ssh_host }}:8000 manage:app  </dev/null >/dev/null 2>&1 &"
