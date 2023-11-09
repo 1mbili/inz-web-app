@@ -29,6 +29,15 @@
     uid: "{{ web_user_uid }}"
     create_home: true
 
+- name: Debug print variables azure
+  ansible.builtin.debug:
+    msg: "{{ item }}"
+  with_items:
+    - "{{ tenant_id }}"
+    - "{{ object_id }}"
+    - "{{ client_id }}"
+    - "{{ client_secret }}"
+
 - name: Set private key from key vault
   ansible.builtin.set_fact:
     rsa_private: "{{ lookup('azure.azcollection.azure_keyvault_secret','private-key',vault_url=vault_url, client_id=client_id, secret=client_secret, tenant_id=tenant_id) }}"
