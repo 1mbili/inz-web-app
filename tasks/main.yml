@@ -133,8 +133,8 @@
     AZURE_CLIENT_ID: "{{ lookup('env', 'ARM_CLIENT_ID') }}"
     AZURE_CLIENT_SECRET: "{{ lookup('env', 'ARM_CLIENT_SECRET') }}"
     KEY_VAULT_NAME: "{{ lookup('env', 'KEY_VAULT_NAME') }}"
-  register: Initialize database
-  changed_when: start_app.stdout != ""
+  register: Initialize_database
+  changed_when: Initialize_database.stdout != ""
 
 - name: Start app
   become: true
