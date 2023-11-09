@@ -34,7 +34,6 @@
     msg: "{{ item }}"
   with_items:
     - "{{ tenant_id }}"
-    - "{{ object_id }}"
     - "{{ client_id }}"
     - "{{ client_secret }}"
 
