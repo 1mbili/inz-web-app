@@ -94,12 +94,12 @@
     - variable: PythonPath
       line: 'export PYTHONPATH=$PYTHONPATH:''{{ web_app_dir }}/backend/app/'''
     - variable: AZURE_TENANT_ID
-      line: 'export AZURE_TENANT_ID=''{{ lookup(''env'', ''AZURE_TENANT_ID'') | quote }}'''
+      line: 'export AZURE_TENANT_ID=''{{ lookup(''env'', ''ARM_TENANT_ID'') | quote }}'''
     - variable: AZURE_CLIENT_ID
-      line: 'export AZURE_CLIENT_ID=''{{ lookup(''env'', ''AZURE_CLIENT_ID'') | quote }}'''
+      line: 'export AZURE_CLIENT_ID=''{{ lookup(''env'', ''ARM_CLIENT_ID'') | quote }}'''
     - variable: AZURE_CLIENT_SECRET
       line: >-
-        export AZURE_CLIENT_SECRET='{{ lookup('env', 'AZURE_CLIENT_SECRET') |
+        export AZURE_CLIENT_SECRET='{{ lookup('env', 'ARM_CLIENT_SECRET') |
         quote }}'
     - variable: KEY_VAULT_NAME
       line: 'export KEY_VAULT_NAME=''{{ lookup(''env'', ''KEY_VAULT_NAME'') | quote }}'''
@@ -121,6 +121,20 @@
       with_items: "{{ processes_on_port.stdout_lines }}"
       changed_when: result.rc == 0
       failed_when: result.rc > 1
+
+- name: Initialize database
+  become: true
+  become_user: "{{ web_app_user }}"
+  ansible.builtin.shell:
+    cmd: "python3 /var/www/backend/app/db_create.py"
+  environment:
+    PYTHONPATH: "{{ web_app_dir }}/backend/app/"
+    AZURE_TENANT_ID: "{{ lookup('env', 'ARM_TENANT_ID') }}"
+    AZURE_CLIENT_ID: "{{ lookup('env', 'ARM_CLIENT_ID') }}"
+    AZURE_CLIENT_SECRET: "{{ lookup('env', 'ARM_CLIENT_SECRET') }}"
+    KEY_VAULT_NAME: "{{ lookup('env', 'KEY_VAULT_NAME') }}"
+  register: Initialize database
+  changed_when: start_app.stdout != ""
 
 - name: Start app
   become: true
