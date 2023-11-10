@@ -140,7 +140,7 @@
   become: true
   become_user: "{{ web_app_user }}"
   ansible.builtin.shell:
-    cmd: "cd {{ web_app_dir }}/backend/ && nohup python3 -m gunicorn --bind {{ ansible_ssh_host }}:8000 manage:app  </dev/null >/dev/null 2>&1 &"
+    cmd: "cd {{ web_app_dir }}/backend/ && nohup python3 -m gunicorn --bind {{ private_adress }}:8000 manage:app  </dev/null >/dev/null 2>&1 &"
   environment:
     PYTHONPATH: "{{ web_app_dir }}/backend/app/"
     AZURE_TENANT_ID: "{{ lookup('env', 'ARM_TENANT_ID') }}"
