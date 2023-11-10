@@ -135,7 +135,6 @@
     KEY_VAULT_NAME: "{{ lookup('env', 'KEY_VAULT_NAME') }}"
   register: Initialize_database
   changed_when: Initialize_database.stdout != ""
-  ignore_errors: true
 
 - name: Start app
   become: true
