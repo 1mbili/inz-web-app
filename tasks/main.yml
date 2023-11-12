@@ -63,7 +63,7 @@
     dest: "{{ web_app_dir }}"
     force: true
     update: true
-    version: 9457f99376eaf75da07ad634af0f91d1597985f8
+    version: bd6056b735538e327bf86be6dd1f7f9538e73a51
 
 - name: Install specified python requirements
   ansible.builtin.pip:
