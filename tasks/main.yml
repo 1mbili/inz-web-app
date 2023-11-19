@@ -8,6 +8,7 @@
     update_cache: true
     cache_valid_time: 3600
   with_items:
+    - acl
     - python3-pip
     - keychain
     - git
@@ -63,7 +64,7 @@
     dest: "{{ web_app_dir }}"
     force: true
     update: true
-    version: 264bf0e45d48675cc89560815d08fd5dc20ef74e
+    version: baa9bf94ed09130cab0d11fa3e956a80e5588ce6
 
 - name: Install specified python requirements
   ansible.builtin.pip:
